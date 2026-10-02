@@ -27,6 +27,10 @@ const choreMessage = document.querySelector("#chore-message");
 const choreList = document.querySelector("#chore-list");
 const choreEmpty = document.querySelector("#chore-empty");
 const choreSection = document.querySelector("#chore-section");
+const choreWeekHeader = document.querySelector("#chore-week-header");
+const choreWeekBody = document.querySelector("#chore-week-body");
+const choreWeekEmpty = document.querySelector("#chore-week-empty");
+const weekStart = getWeekStart(new Date());
 const typeInput = document.querySelector("#type");
 const amountInput = document.querySelector("#amount");
 const categoryInput = document.querySelector("#category");
@@ -99,6 +103,22 @@ profileList.addEventListener("click", (event) => {
     render();
 });
 
+document.querySelector("#previous-week").addEventListener("click", () => {
+    weekStart.setDate(weekStart.getDate() - 7);
+    render();
+});
+
+document.querySelector("#next-week").addEventListener("click", () => {
+    weekStart.setDate(weekStart.getDate() + 7);
+    render();
+});
+
+document.querySelector("#current-week").addEventListener("click", () => {
+    const currentWeek = getWeekStart(new Date());
+    weekStart.setTime(currentWeek.getTime());
+    render();
+});
+
 choreForm.addEventListener("submit", (event) => {
     event.preventDefault();
     choreMessage.textContent = "";
@@ -116,7 +136,11 @@ choreForm.addEventListener("submit", (event) => {
         task,
         date: choreDateInput.value
     };
-    const nextState = { ...appState, chores: [chore, ...appState.chores] };
+    const nextState = {
+        ...appState,
+        chores: [chore, ...appState.chores],
+        choreTasks: [...new Set([...appState.choreTasks, task])]
+    };
     if (!saveState(nextState)) {
         choreMessage.textContent = "保存できませんでした。ブラウザーの設定を確認してください。";
         return;
@@ -139,6 +163,43 @@ choreList.addEventListener("click", (event) => {
     };
     if (!saveState(nextState)) {
         choreMessage.textContent = "記録を削除できませんでした。ブラウザーの設定を確認してください。";
+        return;
+    }
+    appState = nextState;
+    choreMessage.textContent = "";
+    render();
+});
+
+choreWeekBody.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-chore-task][data-chore-date]");
+    if (!button) return;
+
+    const profile = appState.profiles.find((item) => item.id === chorePersonInput.value);
+    if (!profile) {
+        choreMessage.textContent = "先に家族の名前を登録してください。";
+        return;
+    }
+
+    const task = button.dataset.choreTask;
+    const date = button.dataset.choreDate;
+    const alreadyChecked = appState.chores.some((chore) =>
+        chore.profileId === profile.id && chore.task === task && chore.date === date
+    );
+    const chores = alreadyChecked
+        ? appState.chores.filter((chore) =>
+            !(chore.profileId === profile.id && chore.task === task && chore.date === date)
+        )
+        : [{
+            id: createId(),
+            profileId: profile.id,
+            profileName: profile.name,
+            task,
+            date
+        }, ...appState.chores];
+    const nextState = { ...appState, chores };
+
+    if (!saveState(nextState)) {
+        choreMessage.textContent = "チェックを保存できませんでした。ブラウザーの設定を確認してください。";
         return;
     }
     appState = nextState;
@@ -214,6 +275,20 @@ function getLocalDate() {
     return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
+function getWeekStart(date) {
+    const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const daysSinceMonday = (monday.getDay() + 6) % 7;
+    monday.setDate(monday.getDate() - daysSinceMonday);
+    return monday;
+}
+
+function toDateString(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 function createId() {
     if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -254,10 +329,17 @@ function loadState() {
             ) &&
             (stored.chores === undefined ||
                 (Array.isArray(stored.chores) && stored.chores.every(isValidChore))) &&
+            (stored.choreTasks === undefined ||
+                (Array.isArray(stored.choreTasks) && stored.choreTasks.every((task) => typeof task === "string"))) &&
             (stored.activeProfileId === null ||
                 stored.profiles.some((profile) => profile.id === stored.activeProfileId))
         ) {
-            return { ...stored, chores: stored.chores || [] };
+            const chores = stored.chores || [];
+            return {
+                ...stored,
+                chores,
+                choreTasks: stored.choreTasks || [...new Set(chores.map((chore) => chore.task))]
+            };
         }
 
         const legacyTransactions = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
@@ -267,14 +349,14 @@ function loadState() {
                 name: "自分",
                 transactions: legacyTransactions.filter(isValidTransaction)
             };
-            const migrated = { profiles: [profile], activeProfileId: profile.id, chores: [] };
+            const migrated = { profiles: [profile], activeProfileId: profile.id, chores: [], choreTasks: [] };
             saveState(migrated);
             return migrated;
         }
     } catch (error) {
         console.error("おこづかい帳のデータを読み込めませんでした。", error);
     }
-    return { profiles: [], activeProfileId: null, chores: [] };
+    return { profiles: [], activeProfileId: null, chores: [], choreTasks: [] };
 }
 
 function saveState(nextState) {
@@ -414,6 +496,7 @@ function renderChores() {
     document.querySelector("#chore-count").textContent = `${appState.chores.length}件`;
     choreList.replaceChildren();
     choreEmpty.hidden = appState.chores.length > 0;
+    renderChoreWeek();
 
     appState.chores.forEach((chore) => {
         const row = document.createElement("li");
@@ -444,6 +527,83 @@ function renderChores() {
 
         row.append(icon, details, deleteButton);
         choreList.append(row);
+    });
+}
+
+function renderChoreWeek() {
+    const weekDates = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + index);
+        return { date, dateString: toDateString(date) };
+    });
+    const firstDate = weekDates[0].date;
+    const lastDate = weekDates[6].date;
+    const dateFormatter = new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" });
+    document.querySelector("#chore-week-label").textContent =
+        `${dateFormatter.format(firstDate)}〜${dateFormatter.format(lastDate)} のチェック表`;
+
+    choreWeekHeader.replaceChildren();
+    const taskHeading = document.createElement("th");
+    taskHeading.scope = "col";
+    taskHeading.textContent = "お手伝い";
+    choreWeekHeader.append(taskHeading);
+    weekDates.forEach(({ date }) => {
+        const heading = document.createElement("th");
+        heading.scope = "col";
+        heading.textContent = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(date);
+        const day = document.createElement("span");
+        day.className = "chore-day-number";
+        day.textContent = String(date.getDate());
+        heading.append(day);
+        choreWeekHeader.append(heading);
+    });
+
+    choreWeekBody.replaceChildren();
+    const tasks = [...new Set([...appState.choreTasks, ...appState.chores.map((chore) => chore.task)])]
+        .sort((a, b) => a.localeCompare(b, "ja"));
+    choreWeekEmpty.hidden = tasks.length > 0;
+    const selectedProfile = appState.profiles.find((item) => item.id === chorePersonInput.value);
+    document.querySelector("#chore-checker-name").textContent = selectedProfile?.name || "";
+
+    tasks.forEach((task) => {
+        const row = document.createElement("tr");
+        const taskCell = document.createElement("th");
+        taskCell.scope = "row";
+        taskCell.className = "chore-task-cell";
+        taskCell.textContent = task;
+        row.append(taskCell);
+
+        weekDates.forEach(({ dateString }) => {
+            const cell = document.createElement("td");
+            const performers = appState.chores.filter((chore) =>
+                chore.task === task && chore.date === dateString
+            );
+            const checkedBySelected = selectedProfile && performers.some(
+                (chore) => chore.profileId === selectedProfile.id
+            );
+            const button = document.createElement("button");
+            button.className = `chore-check${checkedBySelected ? " is-checked" : ""}`;
+            button.type = "button";
+            button.dataset.choreTask = task;
+            button.dataset.choreDate = dateString;
+            button.setAttribute("aria-pressed", String(Boolean(checkedBySelected)));
+            button.setAttribute(
+                "aria-label",
+                `${task}、${dateString}、${selectedProfile?.name || "家族"}${checkedBySelected ? "のチェックを外す" : "のチェックをつける"}`
+            );
+            button.textContent = checkedBySelected ? "✓" : "＋";
+            cell.append(button);
+
+            if (performers.length > 0) {
+                const names = document.createElement("span");
+                names.className = "chore-performers";
+                names.textContent = [...new Set(performers.map((chore) =>
+                    appState.profiles.find((item) => item.id === chore.profileId)?.name || chore.profileName
+                ))].join("・");
+                cell.append(names);
+            }
+            row.append(cell);
+        });
+        choreWeekBody.append(row);
     });
 }
 

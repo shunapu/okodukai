@@ -54,6 +54,26 @@
                 <button class="submit-button chore-submit" type="submit">お手伝いを記録 <span aria-hidden="true">＋</span></button>
                 <p id="chore-message" class="form-message" role="status" aria-live="polite"></p>
             </form>
+            <div class="chore-week">
+                <div class="chore-week-heading">
+                    <h3 id="chore-week-label">今週のチェック表</h3>
+                    <div class="week-controls" aria-label="週の切り替え">
+                        <button id="previous-week" class="week-button" type="button" aria-label="前の週">‹</button>
+                        <button id="current-week" class="week-button week-today-button" type="button">今週</button>
+                        <button id="next-week" class="week-button" type="button" aria-label="次の週">›</button>
+                    </div>
+                </div>
+                <p class="week-hint">選んだ人：<strong id="chore-checker-name"></strong>。日付のマスを押すとチェックできます。</p>
+                <div class="chore-table-scroll" role="region" aria-label="月曜日から日曜日のお手伝いチェック表" tabindex="0">
+                    <table class="chore-table">
+                        <thead>
+                            <tr id="chore-week-header"></tr>
+                        </thead>
+                        <tbody id="chore-week-body"></tbody>
+                    </table>
+                </div>
+                <p id="chore-week-empty" class="week-empty" hidden>お手伝いを登録すると、ここにチェック表ができます。</p>
+            </div>
             <ul id="chore-list" class="transaction-list chore-list" aria-live="polite"></ul>
             <p id="chore-empty" class="empty-state">まだお手伝いの記録がありません。</p>
         </section>
@@ -128,5 +148,7 @@
 
         <footer>記録はこの端末のブラウザーに保存されます</footer>
     </main>
+
+
 </body>
 </html>
