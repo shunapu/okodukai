@@ -13,12 +13,27 @@
         <header class="app-header">
             <div>
                 <p class="eyebrow">MY LITTLE WALLET</p>
-                <h1>おこづかい帳</h1>
+                <h1 id="app-title">おこづかい帳</h1>
             </div>
             <span class="header-icon" aria-hidden="true">✳</span>
         </header>
 
-        <section class="balance-card" aria-labelledby="balance-title">
+        <section class="family-section" aria-labelledby="family-title">
+            <div class="section-heading">
+                <h2 id="family-title">だれのおこづかい？</h2>
+            </div>
+            <nav id="profile-list" class="profile-list" aria-label="家族の切り替え"></nav>
+            <form id="profile-form" class="profile-form">
+                <label class="profile-name-field">
+                    <span id="profile-form-label">家族の名前</span>
+                    <input id="profile-name" name="name" type="text" maxlength="24" placeholder="例：はな" autocomplete="off" required>
+                </label>
+                <button class="add-profile-button" type="submit"><span aria-hidden="true">＋</span> <span id="profile-submit-label">追加</span></button>
+            </form>
+            <p id="profile-message" class="profile-message" role="status" aria-live="polite"></p>
+        </section>
+
+        <section id="balance-section" class="balance-card" aria-labelledby="balance-title" hidden>
             <p id="balance-title" class="card-label">いまの残高</p>
             <p class="balance-amount"><span id="balance">¥0</span></p>
             <div class="summary">
@@ -35,7 +50,7 @@
             </div>
         </section>
 
-        <section class="form-section" aria-labelledby="form-title">
+        <section id="entry-section" class="form-section" aria-labelledby="form-title" hidden>
             <h2 id="form-title">記録をつける</h2>
             <form id="transaction-form">
                 <div class="type-switch" role="group" aria-label="記録の種類">
@@ -77,7 +92,7 @@
             </form>
         </section>
 
-        <section class="history-section" aria-labelledby="history-title">
+        <section id="history-section" class="history-section" aria-labelledby="history-title" hidden>
             <div class="section-heading">
                 <h2 id="history-title">最近の記録</h2>
                 <span id="record-count" class="record-count">0件</span>

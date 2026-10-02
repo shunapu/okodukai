@@ -146,8 +146,13 @@ h1 {
 }
 
 .form-section,
-.history-section {
+.history-section,
+.family-section {
     margin-top: 30px;
+}
+
+.family-section {
+    margin: 0 0 23px;
 }
 
 h2 {
@@ -294,6 +299,85 @@ h2 {
 
 .section-heading h2 {
     margin-bottom: 0;
+}
+
+.profile-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 12px;
+}
+
+.profile-button {
+    min-height: 35px;
+    padding: 0 14px;
+    border: 1px solid #e3e9df;
+    border-radius: 18px;
+    background: #fff;
+    color: #667268;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.profile-button[aria-pressed="true"] {
+    border-color: var(--green);
+    background: #e8eee4;
+    color: var(--green-dark);
+}
+
+.profile-form {
+    display: flex;
+    align-items: end;
+    gap: 9px;
+}
+
+.profile-name-field {
+    display: grid;
+    flex: 1;
+    gap: 6px;
+    color: #626f64;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.profile-name-field input {
+    width: 100%;
+    height: 40px;
+    padding: 0 11px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    outline: none;
+    background: #fff;
+    color: #354239;
+    font-size: 13px;
+}
+
+.profile-name-field input:focus {
+    border-color: #8ca992;
+    box-shadow: 0 0 0 3px rgb(84 124 94 / 10%);
+}
+
+.add-profile-button {
+    height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: #e8eee4;
+    color: var(--green-dark);
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.add-profile-button:hover {
+    background: #dce7d9;
+}
+
+.profile-message {
+    min-height: 16px;
+    margin: 5px 0 0;
+    color: #a34839;
+    font-size: 11px;
 }
 
 .record-count {
