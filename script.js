@@ -13,11 +13,20 @@ const categoryIcons = {
     "その他": "🌱",
     "おこづかい": "🎁"
 };
+const profileColors = [
+    { id: "green", name: "みどり", main: "#547c5e", dark: "#3e6349", light: "#e8eee4" },
+    { id: "blue", name: "あお", main: "#4f7896", dark: "#345b77", light: "#e6eff5" },
+    { id: "purple", name: "むらさき", main: "#80649a", dark: "#62477b", light: "#f0eaf5" },
+    { id: "orange", name: "オレンジ", main: "#b8753e", dark: "#90592c", light: "#f8eee3" },
+    { id: "pink", name: "ピンク", main: "#b9677c", dark: "#91485e", light: "#f7e9ed" },
+    { id: "teal", name: "みずいろ", main: "#47847f", dark: "#326660", light: "#e5f1ef" }
+];
 
 const form = document.querySelector("#transaction-form");
 const profileForm = document.querySelector("#profile-form");
 const profileNameInput = document.querySelector("#profile-name");
 const profileList = document.querySelector("#profile-list");
+const profileColorPicker = document.querySelector("#profile-color-picker");
 const profileMessage = document.querySelector("#profile-message");
 const choreForm = document.querySelector("#chore-form");
 const chorePersonInput = document.querySelector("#chore-person");
@@ -87,7 +96,12 @@ profileForm.addEventListener("submit", (event) => {
         return;
     }
 
-    const profile = { id: createId(), name, transactions: [] };
+    const profile = {
+        id: createId(),
+        name,
+        color: profileColors[appState.profiles.length % profileColors.length].id,
+        transactions: []
+    };
     const nextState = {
         ...appState,
         profiles: [...appState.profiles, profile],
@@ -117,6 +131,27 @@ profileList.addEventListener("click", (event) => {
     appState = nextState;
     profileMessage.textContent = "";
     formMessage.textContent = "";
+    render();
+});
+
+profileColorPicker.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-profile-color]");
+    const profile = getActiveProfile();
+    if (!button || !profile) return;
+
+    const nextState = {
+        ...appState,
+        profiles: appState.profiles.map((item) =>
+            item.id === profile.id ? { ...item, color: button.dataset.profileColor } : item
+        )
+    };
+    if (!saveState(nextState)) {
+        profileMessage.textContent = "色を保存できませんでした。ブラウザーの設定を確認してください。";
+        return;
+    }
+
+    appState = nextState;
+    profileMessage.textContent = "";
     render();
 });
 
@@ -307,6 +342,11 @@ function isValidTransaction(item) {
         typeof item.memo === "string";
 }
 
+function getProfileColor(profile, index = 0) {
+    return profileColors.find((color) => color.id === profile.color) ||
+        profileColors[index % profileColors.length];
+}
+
 function isValidChore(item) {
     return item &&
         typeof item.id === "string" &&
@@ -426,15 +466,43 @@ function formatDate(dateString) {
 function render() {
     const profile = getActiveProfile();
     profileList.replaceChildren();
-    appState.profiles.forEach((item) => {
+    appState.profiles.forEach((item, index) => {
+        const color = getProfileColor(item, index);
         const button = document.createElement("button");
         button.className = "profile-button";
         button.type = "button";
         button.dataset.profileId = item.id;
         button.setAttribute("aria-pressed", String(item.id === appState.activeProfileId));
+        button.style.setProperty("--profile-color", color.main);
+        button.style.setProperty("--profile-color-dark", color.dark);
+        button.style.setProperty("--profile-color-light", color.light);
         button.textContent = item.name;
         profileList.append(button);
     });
+    const activeProfileIndex = appState.profiles.findIndex((item) => item.id === appState.activeProfileId);
+    const activeColor = profile ? getProfileColor(profile, activeProfileIndex) : profileColors[0];
+    document.documentElement.style.setProperty("--green", activeColor.main);
+    document.documentElement.style.setProperty("--green-dark", activeColor.dark);
+    document.documentElement.style.setProperty("--profile-color-light", activeColor.light);
+    profileColorPicker.replaceChildren();
+    profileColorPicker.hidden = !profile;
+    if (profile) {
+        const label = document.createElement("span");
+        label.className = "profile-color-label";
+        label.textContent = `${profile.name}の色`;
+        profileColorPicker.append(label);
+        profileColors.forEach((color) => {
+            const button = document.createElement("button");
+            button.className = "profile-color-button";
+            button.type = "button";
+            button.dataset.profileColor = color.id;
+            button.setAttribute("aria-label", `${profile.name}の色を${color.name}にする`);
+            button.setAttribute("aria-pressed", String(activeColor.id === color.id));
+            button.style.setProperty("--swatch-color", color.main);
+            profileColorPicker.append(button);
+        });
+        profileColorPicker.setAttribute("aria-label", `${profile.name}の色を選ぶ`);
+    }
     document.querySelector("#profile-form-label").textContent =
         appState.profiles.length === 0 ? "あなたの名前" : "家族の名前";
     document.querySelector("#profile-submit-label").textContent =
