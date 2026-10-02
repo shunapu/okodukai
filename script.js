@@ -24,8 +24,6 @@ const chorePersonInput = document.querySelector("#chore-person");
 const choreTaskInput = document.querySelector("#chore-task");
 const choreDateInput = document.querySelector("#chore-date");
 const choreMessage = document.querySelector("#chore-message");
-const choreList = document.querySelector("#chore-list");
-const choreEmpty = document.querySelector("#chore-empty");
 const choreSection = document.querySelector("#chore-section");
 const choreWeekHeader = document.querySelector("#chore-week-header");
 const choreWeekBody = document.querySelector("#chore-week-body");
@@ -151,23 +149,6 @@ choreForm.addEventListener("submit", (event) => {
     choreDateInput.value = getLocalDate();
     render();
     choreTaskInput.focus();
-});
-
-choreList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-delete-chore-id]");
-    if (!button) return;
-
-    const nextState = {
-        ...appState,
-        chores: appState.chores.filter((chore) => chore.id !== button.dataset.deleteChoreId)
-    };
-    if (!saveState(nextState)) {
-        choreMessage.textContent = "記録を削除できませんでした。ブラウザーの設定を確認してください。";
-        return;
-    }
-    appState = nextState;
-    choreMessage.textContent = "";
-    render();
 });
 
 choreWeekBody.addEventListener("click", (event) => {
@@ -493,41 +474,7 @@ function render() {
 }
 
 function renderChores() {
-    document.querySelector("#chore-count").textContent = `${appState.chores.length}件`;
-    choreList.replaceChildren();
-    choreEmpty.hidden = appState.chores.length > 0;
     renderChoreWeek();
-
-    appState.chores.forEach((chore) => {
-        const row = document.createElement("li");
-        row.className = "transaction-item";
-
-        const icon = document.createElement("span");
-        icon.className = "transaction-icon chore-icon";
-        icon.setAttribute("aria-hidden", "true");
-        icon.textContent = "🧹";
-
-        const details = document.createElement("div");
-        details.className = "transaction-details";
-        const title = document.createElement("p");
-        title.className = "transaction-title";
-        title.textContent = chore.task;
-        const meta = document.createElement("p");
-        meta.className = "transaction-meta";
-        const profile = appState.profiles.find((item) => item.id === chore.profileId);
-        meta.textContent = `${profile?.name || chore.profileName} ・ ${formatDate(chore.date)}`;
-        details.append(title, meta);
-
-        const deleteButton = document.createElement("button");
-        deleteButton.className = "delete-button";
-        deleteButton.type = "button";
-        deleteButton.dataset.deleteChoreId = chore.id;
-        deleteButton.setAttribute("aria-label", `${chore.profileName}の${chore.task}の記録を削除`);
-        deleteButton.textContent = "×";
-
-        row.append(icon, details, deleteButton);
-        choreList.append(row);
-    });
 }
 
 function renderChoreWeek() {
