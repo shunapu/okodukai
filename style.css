@@ -147,8 +147,16 @@ h1 {
 
 .form-section,
 .history-section,
+.chore-section,
 .family-section {
     margin-top: 30px;
+}
+
+.chore-section {
+    padding: 18px;
+    border: 1px solid #e9ece5;
+    border-radius: 18px;
+    background: #fff;
 }
 
 .family-section {
@@ -383,6 +391,38 @@ h2 {
 .record-count {
     color: var(--muted);
     font-size: 11px;
+}
+
+.chore-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.chore-form > .field:first-child,
+.chore-form > .field:nth-child(2) {
+    grid-column: span 2;
+}
+
+.chore-submit {
+    margin-top: 0;
+}
+
+.chore-form .form-message {
+    align-self: center;
+    margin: 0;
+}
+
+.chore-list {
+    margin-top: 10px;
+}
+
+.chore-icon {
+    background: #f4f1e9;
+}
+
+.chore-section > .empty-state {
+    margin: 10px 0 0;
 }
 
 .transaction-list {

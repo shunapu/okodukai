@@ -19,6 +19,14 @@ const profileForm = document.querySelector("#profile-form");
 const profileNameInput = document.querySelector("#profile-name");
 const profileList = document.querySelector("#profile-list");
 const profileMessage = document.querySelector("#profile-message");
+const choreForm = document.querySelector("#chore-form");
+const chorePersonInput = document.querySelector("#chore-person");
+const choreTaskInput = document.querySelector("#chore-task");
+const choreDateInput = document.querySelector("#chore-date");
+const choreMessage = document.querySelector("#chore-message");
+const choreList = document.querySelector("#chore-list");
+const choreEmpty = document.querySelector("#chore-empty");
+const choreSection = document.querySelector("#chore-section");
 const typeInput = document.querySelector("#type");
 const amountInput = document.querySelector("#amount");
 const categoryInput = document.querySelector("#category");
@@ -34,6 +42,7 @@ const historySection = document.querySelector("#history-section");
 let appState = loadState();
 
 dateInput.value = getLocalDate();
+choreDateInput.value = getLocalDate();
 document.querySelectorAll(".type-button").forEach((button) => {
     button.addEventListener("click", () => {
         const isIncome = button.dataset.type === "income";
@@ -59,6 +68,7 @@ profileForm.addEventListener("submit", (event) => {
 
     const profile = { id: createId(), name, transactions: [] };
     const nextState = {
+        ...appState,
         profiles: [...appState.profiles, profile],
         activeProfileId: profile.id
     };
@@ -86,6 +96,53 @@ profileList.addEventListener("click", (event) => {
     appState = nextState;
     profileMessage.textContent = "";
     formMessage.textContent = "";
+    render();
+});
+
+choreForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    choreMessage.textContent = "";
+    const profile = appState.profiles.find((item) => item.id === chorePersonInput.value);
+    const task = choreTaskInput.value.trim();
+    if (!profile || !task) {
+        choreMessage.textContent = "お手伝いをした人と内容を入力してください。";
+        return;
+    }
+
+    const chore = {
+        id: createId(),
+        profileId: profile.id,
+        profileName: profile.name,
+        task,
+        date: choreDateInput.value
+    };
+    const nextState = { ...appState, chores: [chore, ...appState.chores] };
+    if (!saveState(nextState)) {
+        choreMessage.textContent = "保存できませんでした。ブラウザーの設定を確認してください。";
+        return;
+    }
+
+    appState = nextState;
+    choreForm.reset();
+    choreDateInput.value = getLocalDate();
+    render();
+    choreTaskInput.focus();
+});
+
+choreList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-delete-chore-id]");
+    if (!button) return;
+
+    const nextState = {
+        ...appState,
+        chores: appState.chores.filter((chore) => chore.id !== button.dataset.deleteChoreId)
+    };
+    if (!saveState(nextState)) {
+        choreMessage.textContent = "記録を削除できませんでした。ブラウザーの設定を確認してください。";
+        return;
+    }
+    appState = nextState;
+    choreMessage.textContent = "";
     render();
 });
 
@@ -173,6 +230,15 @@ function isValidTransaction(item) {
         typeof item.memo === "string";
 }
 
+function isValidChore(item) {
+    return item &&
+        typeof item.id === "string" &&
+        typeof item.profileId === "string" &&
+        typeof item.profileName === "string" &&
+        typeof item.task === "string" &&
+        typeof item.date === "string";
+}
+
 function loadState() {
     try {
         const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -186,10 +252,12 @@ function loadState() {
                 Array.isArray(profile.transactions) &&
                 profile.transactions.every(isValidTransaction)
             ) &&
+            (stored.chores === undefined ||
+                (Array.isArray(stored.chores) && stored.chores.every(isValidChore))) &&
             (stored.activeProfileId === null ||
                 stored.profiles.some((profile) => profile.id === stored.activeProfileId))
         ) {
-            return stored;
+            return { ...stored, chores: stored.chores || [] };
         }
 
         const legacyTransactions = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "[]");
@@ -199,14 +267,14 @@ function loadState() {
                 name: "自分",
                 transactions: legacyTransactions.filter(isValidTransaction)
             };
-            const migrated = { profiles: [profile], activeProfileId: profile.id };
+            const migrated = { profiles: [profile], activeProfileId: profile.id, chores: [] };
             saveState(migrated);
             return migrated;
         }
     } catch (error) {
         console.error("おこづかい帳のデータを読み込めませんでした。", error);
     }
-    return { profiles: [], activeProfileId: null };
+    return { profiles: [], activeProfileId: null, chores: [] };
 }
 
 function saveState(nextState) {
@@ -260,9 +328,23 @@ function render() {
         appState.profiles.length === 0 ? "はじめる" : "追加";
 
     const hasProfile = profile !== null;
+    const hasProfiles = appState.profiles.length > 0;
     balanceSection.hidden = !hasProfile;
     entrySection.hidden = !hasProfile;
     historySection.hidden = !hasProfile;
+    choreSection.hidden = !hasProfiles;
+    const selectedChorePerson = appState.profiles.some((item) => item.id === chorePersonInput.value)
+        ? chorePersonInput.value
+        : appState.activeProfileId || appState.profiles[0]?.id || "";
+    chorePersonInput.replaceChildren();
+    appState.profiles.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        chorePersonInput.append(option);
+    });
+    chorePersonInput.value = selectedChorePerson;
+    renderChores();
     document.querySelector("#app-title").textContent =
         hasProfile ? `${profile.name}のおこづかい帳` : "おこづかい帳";
     if (!hasProfile) {
@@ -325,6 +407,43 @@ function render() {
 
         row.append(icon, details, amount, deleteButton);
         list.append(row);
+    });
+}
+
+function renderChores() {
+    document.querySelector("#chore-count").textContent = `${appState.chores.length}件`;
+    choreList.replaceChildren();
+    choreEmpty.hidden = appState.chores.length > 0;
+
+    appState.chores.forEach((chore) => {
+        const row = document.createElement("li");
+        row.className = "transaction-item";
+
+        const icon = document.createElement("span");
+        icon.className = "transaction-icon chore-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = "🧹";
+
+        const details = document.createElement("div");
+        details.className = "transaction-details";
+        const title = document.createElement("p");
+        title.className = "transaction-title";
+        title.textContent = chore.task;
+        const meta = document.createElement("p");
+        meta.className = "transaction-meta";
+        const profile = appState.profiles.find((item) => item.id === chore.profileId);
+        meta.textContent = `${profile?.name || chore.profileName} ・ ${formatDate(chore.date)}`;
+        details.append(title, meta);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-button";
+        deleteButton.type = "button";
+        deleteButton.dataset.deleteChoreId = chore.id;
+        deleteButton.setAttribute("aria-label", `${chore.profileName}の${chore.task}の記録を削除`);
+        deleteButton.textContent = "×";
+
+        row.append(icon, details, deleteButton);
+        choreList.append(row);
     });
 }
 

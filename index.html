@@ -33,6 +33,31 @@
             <p id="profile-message" class="profile-message" role="status" aria-live="polite"></p>
         </section>
 
+        <section id="chore-section" class="chore-section" aria-labelledby="chore-title" hidden>
+            <div class="section-heading">
+                <h2 id="chore-title">お手伝いの記録</h2>
+                <span id="chore-count" class="record-count">0件</span>
+            </div>
+            <form id="chore-form" class="chore-form">
+                <label class="field">
+                    <span>だれがお手伝いした？</span>
+                    <select id="chore-person" name="person" required></select>
+                </label>
+                <label class="field">
+                    <span>お手伝いの内容</span>
+                    <input id="chore-task" name="task" type="text" maxlength="60" placeholder="例：お皿洗い" required>
+                </label>
+                <label class="field">
+                    <span>日付</span>
+                    <input id="chore-date" name="date" type="date" required>
+                </label>
+                <button class="submit-button chore-submit" type="submit">お手伝いを記録 <span aria-hidden="true">＋</span></button>
+                <p id="chore-message" class="form-message" role="status" aria-live="polite"></p>
+            </form>
+            <ul id="chore-list" class="transaction-list chore-list" aria-live="polite"></ul>
+            <p id="chore-empty" class="empty-state">まだお手伝いの記録がありません。</p>
+        </section>
+
         <section id="balance-section" class="balance-card" aria-labelledby="balance-title" hidden>
             <p id="balance-title" class="card-label">いまの残高</p>
             <p class="balance-amount"><span id="balance">¥0</span></p>
