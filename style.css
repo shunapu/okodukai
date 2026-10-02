@@ -163,6 +163,37 @@ h1 {
     margin: 0 0 23px;
 }
 
+.page-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin: 0 0 23px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #ebeee8;
+}
+
+.page-button {
+    min-height: 40px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #79837a;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.page-button.is-selected {
+    background: #fff;
+    color: var(--green-dark);
+    box-shadow: 0 1px 4px rgb(36 52 40 / 9%);
+}
+
+.page-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 h2 {
     margin-bottom: 14px;
     font-size: 17px;

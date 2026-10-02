@@ -25,6 +25,8 @@ const choreTaskInput = document.querySelector("#chore-task");
 const choreDateInput = document.querySelector("#chore-date");
 const choreMessage = document.querySelector("#chore-message");
 const choreSection = document.querySelector("#chore-section");
+const allowancePageButton = document.querySelector("#allowance-page-button");
+const chorePageButton = document.querySelector("#chore-page-button");
 const choreWeekHeader = document.querySelector("#chore-week-header");
 const choreWeekBody = document.querySelector("#chore-week-body");
 const choreWeekEmpty = document.querySelector("#chore-week-empty");
@@ -42,6 +44,18 @@ const entrySection = document.querySelector("#entry-section");
 const historySection = document.querySelector("#history-section");
 
 let appState = loadState();
+let currentPage = "allowance";
+
+allowancePageButton.addEventListener("click", () => {
+    currentPage = "allowance";
+    render();
+});
+
+chorePageButton.addEventListener("click", () => {
+    if (appState.profiles.length === 0) return;
+    currentPage = "chores";
+    render();
+});
 
 dateInput.value = getLocalDate();
 choreDateInput.value = getLocalDate();
@@ -392,10 +406,16 @@ function render() {
 
     const hasProfile = profile !== null;
     const hasProfiles = appState.profiles.length > 0;
-    balanceSection.hidden = !hasProfile;
-    entrySection.hidden = !hasProfile;
-    historySection.hidden = !hasProfile;
-    choreSection.hidden = !hasProfiles;
+    const isAllowancePage = currentPage === "allowance";
+    balanceSection.hidden = !hasProfile || !isAllowancePage;
+    entrySection.hidden = !hasProfile || !isAllowancePage;
+    historySection.hidden = !hasProfile || !isAllowancePage;
+    choreSection.hidden = !hasProfiles || isAllowancePage;
+    chorePageButton.disabled = !hasProfiles;
+    allowancePageButton.classList.toggle("is-selected", isAllowancePage);
+    chorePageButton.classList.toggle("is-selected", !isAllowancePage);
+    allowancePageButton.setAttribute("aria-current", String(isAllowancePage ? "page" : "false"));
+    chorePageButton.setAttribute("aria-current", String(isAllowancePage ? "false" : "page"));
     const selectedChorePerson = appState.profiles.some((item) => item.id === chorePersonInput.value)
         ? chorePersonInput.value
         : appState.activeProfileId || appState.profiles[0]?.id || "";
