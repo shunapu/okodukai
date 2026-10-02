@@ -57,6 +57,11 @@ chorePageButton.addEventListener("click", () => {
     render();
 });
 
+chorePersonInput.addEventListener("change", () => {
+    choreMessage.textContent = "";
+    renderChores();
+});
+
 dateInput.value = getLocalDate();
 choreDateInput.value = getLocalDate();
 document.querySelectorAll(".type-button").forEach((button) => {
@@ -151,7 +156,9 @@ choreForm.addEventListener("submit", (event) => {
     const nextState = {
         ...appState,
         chores: [chore, ...appState.chores],
-        choreTasks: [...new Set([...appState.choreTasks, task])]
+        choreTasks: appState.choreTasks.some((item) =>
+            item.profileId === profile.id && item.task === task
+        ) ? appState.choreTasks : [...appState.choreTasks, { profileId: profile.id, task }]
     };
     if (!saveState(nextState)) {
         choreMessage.textContent = "保存できませんでした。ブラウザーの設定を確認してください。";
@@ -309,6 +316,13 @@ function isValidChore(item) {
         typeof item.date === "string";
 }
 
+function isValidChoreTask(item) {
+    return typeof item === "string" ||
+        (item &&
+            typeof item.profileId === "string" &&
+            typeof item.task === "string");
+}
+
 function loadState() {
     try {
         const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -325,15 +339,37 @@ function loadState() {
             (stored.chores === undefined ||
                 (Array.isArray(stored.chores) && stored.chores.every(isValidChore))) &&
             (stored.choreTasks === undefined ||
-                (Array.isArray(stored.choreTasks) && stored.choreTasks.every((task) => typeof task === "string"))) &&
+                (Array.isArray(stored.choreTasks) && stored.choreTasks.every(isValidChoreTask))) &&
             (stored.activeProfileId === null ||
                 stored.profiles.some((profile) => profile.id === stored.activeProfileId))
         ) {
             const chores = stored.chores || [];
+            const choreTasks = [];
+            const addChoreTask = (profileId, task) => {
+                if (
+                    stored.profiles.some((profile) => profile.id === profileId) &&
+                    !choreTasks.some((item) => item.profileId === profileId && item.task === task)
+                ) {
+                    choreTasks.push({ profileId, task });
+                }
+            };
+            (stored.choreTasks || [...new Set(chores.map((chore) => chore.task))]).forEach((item) => {
+                if (typeof item !== "string") {
+                    addChoreTask(item.profileId, item.task);
+                    return;
+                }
+                const owners = [...new Set(chores
+                    .filter((chore) => chore.task === item)
+                    .map((chore) => chore.profileId))];
+                (owners.length > 0 ? owners : [stored.activeProfileId]).forEach((profileId) => {
+                    if (profileId) addChoreTask(profileId, item);
+                });
+            });
+            chores.forEach((chore) => addChoreTask(chore.profileId, chore.task));
             return {
                 ...stored,
                 chores,
-                choreTasks: stored.choreTasks || [...new Set(chores.map((chore) => chore.task))]
+                choreTasks
             };
         }
 
@@ -525,11 +561,17 @@ function renderChoreWeek() {
     });
 
     choreWeekBody.replaceChildren();
-    const tasks = [...new Set([...appState.choreTasks, ...appState.chores.map((chore) => chore.task)])]
-        .sort((a, b) => a.localeCompare(b, "ja"));
-    choreWeekEmpty.hidden = tasks.length > 0;
     const selectedProfile = appState.profiles.find((item) => item.id === chorePersonInput.value);
     document.querySelector("#chore-checker-name").textContent = selectedProfile?.name || "";
+    const tasks = [...new Set([
+        ...appState.choreTasks
+            .filter((item) => item.profileId === selectedProfile?.id)
+            .map((item) => item.task),
+        ...appState.chores
+            .filter((chore) => chore.profileId === selectedProfile?.id)
+            .map((chore) => chore.task)
+    ])].sort((a, b) => a.localeCompare(b, "ja"));
+    choreWeekEmpty.hidden = tasks.length > 0;
 
     tasks.forEach((task) => {
         const row = document.createElement("tr");
@@ -541,11 +583,10 @@ function renderChoreWeek() {
 
         weekDates.forEach(({ dateString }) => {
             const cell = document.createElement("td");
-            const performers = appState.chores.filter((chore) =>
-                chore.task === task && chore.date === dateString
-            );
-            const checkedBySelected = selectedProfile && performers.some(
-                (chore) => chore.profileId === selectedProfile.id
+            const checkedBySelected = selectedProfile && appState.chores.some((chore) =>
+                chore.profileId === selectedProfile.id &&
+                chore.task === task &&
+                chore.date === dateString
             );
             const button = document.createElement("button");
             button.className = `chore-check${checkedBySelected ? " is-checked" : ""}`;
@@ -559,15 +600,6 @@ function renderChoreWeek() {
             );
             button.textContent = checkedBySelected ? "✓" : "＋";
             cell.append(button);
-
-            if (performers.length > 0) {
-                const names = document.createElement("span");
-                names.className = "chore-performers";
-                names.textContent = [...new Set(performers.map((chore) =>
-                    appState.profiles.find((item) => item.id === chore.profileId)?.name || chore.profileName
-                ))].join("・");
-                cell.append(names);
-            }
             row.append(cell);
         });
         choreWeekBody.append(row);
