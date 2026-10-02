@@ -1,11 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta name="theme-color" content="#f6f7f2">
+    <title>おこづかい帳</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
-    おこづかいアプリを作るぞ
+    <main class="app">
+        <header class="app-header">
+            <div>
+                <p class="eyebrow">MY LITTLE WALLET</p>
+                <h1>おこづかい帳</h1>
+            </div>
+            <span class="header-icon" aria-hidden="true">✳</span>
+        </header>
+
+        <section class="balance-card" aria-labelledby="balance-title">
+            <p id="balance-title" class="card-label">いまの残高</p>
+            <p class="balance-amount"><span id="balance">¥0</span></p>
+            <div class="summary">
+                <div>
+                    <span class="summary-icon income-icon" aria-hidden="true">↙</span>
+                    <span class="summary-label">今月の収入</span>
+                    <strong id="monthly-income">¥0</strong>
+                </div>
+                <div>
+                    <span class="summary-icon expense-icon" aria-hidden="true">↗</span>
+                    <span class="summary-label">今月の支出</span>
+                    <strong id="monthly-expense">¥0</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section" aria-labelledby="form-title">
+            <h2 id="form-title">記録をつける</h2>
+            <form id="transaction-form">
+                <div class="type-switch" role="group" aria-label="記録の種類">
+                    <button class="type-button is-selected" type="button" data-type="expense" aria-pressed="true">支出</button>
+                    <button class="type-button" type="button" data-type="income" aria-pressed="false">収入</button>
+                </div>
+                <input id="type" name="type" type="hidden" value="expense">
+
+                <div class="form-grid">
+                    <label class="field field-amount">
+                        <span>金額</span>
+                        <div class="amount-input">
+                            <span aria-hidden="true">¥</span>
+                            <input id="amount" name="amount" type="number" min="1" step="1" placeholder="500" required inputmode="numeric">
+                        </div>
+                    </label>
+                    <label class="field">
+                        <span>カテゴリ</span>
+                        <select id="category" name="category">
+                            <option value="おこづかい">おこづかい</option>
+                            <option value="食べもの">食べもの</option>
+                            <option value="あそび">あそび</option>
+                            <option value="おやつ">おやつ</option>
+                            <option value="本・学び">本・学び</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>日付</span>
+                        <input id="date" name="date" type="date" required>
+                    </label>
+                    <label class="field">
+                        <span>メモ <small>（任意）</small></span>
+                        <input id="memo" name="memo" type="text" maxlength="60" placeholder="何に使った？">
+                    </label>
+                </div>
+                <button class="submit-button" type="submit">記録する <span aria-hidden="true">＋</span></button>
+                <p id="form-message" class="form-message" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section class="history-section" aria-labelledby="history-title">
+            <div class="section-heading">
+                <h2 id="history-title">最近の記録</h2>
+                <span id="record-count" class="record-count">0件</span>
+            </div>
+            <ul id="transaction-list" class="transaction-list" aria-live="polite"></ul>
+            <p id="empty-state" class="empty-state">まだ記録がありません。<br>最初の記録をつけてみよう！</p>
+        </section>
+
+        <footer>記録はこの端末のブラウザーに保存されます</footer>
+    </main>
 </body>
 </html>
